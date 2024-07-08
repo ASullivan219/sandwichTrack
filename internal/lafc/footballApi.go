@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ASullivan219/freeSandwich/internal/lafc/models"
+	"github.com/ASullivan219/freeSandwich/internal/notifier"
 )
 
 const (
@@ -42,17 +43,17 @@ func newSimpleFixture(f models.FixtureEntry) simpleFixture {
 	return simpleFixture{fixtureId: f.Fixture.Id, Time: fixtureDate, Description: description, ExecutionTime: executionTime}
 }
 
-func BuildCronnables() []LafcCronJob {
+func BuildCronnables(notifier notifier.I_Notifier) []LafcCronJob {
 	fixtures := getAllFixtures()
 	eligible := filterFixtures(fixtures)
 	fmt.Println(len(eligible))
-	return convertToCronnables(eligible)
+	return convertToCronnables(eligible, notifier)
 }
 
-func convertToCronnables(fixtures []simpleFixture) []LafcCronJob {
+func convertToCronnables(fixtures []simpleFixture, notifier notifier.I_Notifier) []LafcCronJob {
 	jobs := make([]LafcCronJob, 0, len(fixtures))
 	for _, fixture := range fixtures {
-		jobs = append(jobs, *newjob(fixture))
+		jobs = append(jobs, *newjob(fixture, notifier))
 	}
 	return jobs
 }

@@ -11,6 +11,7 @@ import (
 
 func main() {
 	godotenv.Load()
+
 	cronMan := cronmanager.New()
 	emailNotifier := notifier.NewEmailNotifier(
 		os.Getenv("FROM_EMAIL"),
