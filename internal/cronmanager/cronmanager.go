@@ -2,6 +2,7 @@ package cronmanager
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -29,8 +30,10 @@ func New() *CronManager {
 }
 
 func (cm *CronManager) Start() {
-	fmt.Println("Starting cron Manager")
+	slog.Info("Starting cron Manager")
 	cm.Cron.Start()
+	for {
+	}
 
 }
 func (cm *CronManager) NextFive() []cron.Entry {
@@ -43,9 +46,9 @@ func (cm *CronManager) NextFive() []cron.Entry {
 func (cm *CronManager) AddJob(time time.Time, job cron.Job, description string) {
 	_, err := cm.Cron.AddJob(timeToCronStr(time), job)
 	if err != nil {
-		fmt.Printf("Error creating Cronnable for: %s\n", description)
+		slog.Error("Error creating Cronnable for: " + description)
 	}
-	fmt.Printf("Created Cronnable for %s\n", description)
+	slog.Info("Created Cronnable for " + description)
 }
 
 func timeToCronStr(time time.Time) string {
@@ -55,8 +58,7 @@ func timeToCronStr(time time.Time) string {
 func (ce *CronManager) addCronnable(cronnable ICronnable) cron.EntryID {
 	entry, err := ce.Cron.AddFunc(cronnable.getCronString(), cronnable.getFunction)
 	if err != nil {
-		//TODO: replace with Structured logging once set up
-		fmt.Println(err)
+		slog.Error("ERROR: " + err.Error())
 	}
 	return entry
 }

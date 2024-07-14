@@ -1,12 +1,12 @@
 package notifier
 
 import (
-	"fmt"
+	"log/slog"
 	"net/smtp"
 )
 
 type I_Notifier interface {
-	NotifyAll()
+	NotifyAll(string)
 	NotifyOne(string, string) error
 }
 
@@ -27,26 +27,25 @@ func NewEmailNotifier(from string, password string, host string, port string) em
 	}
 }
 
-func (e *emailNotifier) NotifyAll() {
-	//TODO:
-	return
+func (e *emailNotifier) NotifyAll(message string) {
+	e.NotifyOne(message, "alexander.sullivan219@gmail.com")
 }
 
 func (e *emailNotifier) NotifyOne(message string, email string) error {
-	fmt.Println(email)
-	fmt.Println(message)
-	fmt.Println(e.smtpHost)
-	fmt.Println(e.smtpPort)
-
 	toEmails := []string{
 		email,
 	}
 	auth := smtp.PlainAuth("", e.FromEmail, e.password, e.smtpHost)
 	err := smtp.SendMail(e.smtpHost+":"+e.smtpPort, auth, e.FromEmail, toEmails, []byte(message))
 	if err != nil {
-		fmt.Println("ERROR: sending email", err)
+		slog.Error(
+			"error sending email",
+			slog.String("error", err.Error()))
 		return err
 	}
-	fmt.Printf("Email successfully sent to %s\n", email)
+	slog.Info(
+		"Email successfully sent",
+		slog.String("email", email),
+		slog.String("message", message))
 	return nil
 }

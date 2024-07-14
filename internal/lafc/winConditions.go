@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,7 +26,12 @@ func newjob(sf simpleFixture, n notifier.I_Notifier) *LafcCronJob {
 func (j *LafcCronJob) Run() {
 	notify := CheckWinConditions(j.Sf)
 	if notify {
-		j.notifier.NotifyAll()
+		j.notifier.NotifyAll(
+			fmt.Sprintf(
+				"LAFC won at home, check the chick-fil-a app for a free sandwich\n%s",
+				j.Sf.Description,
+			),
+		)
 	}
 }
 
@@ -33,7 +39,7 @@ func CheckWinConditions(fixture simpleFixture) bool {
 	fixtureId := strconv.Itoa(fixture.fixtureId)
 	api, err := url.Parse(BASE_API_URL)
 	if err != nil {
-		fmt.Println("Error parsing baseURL, abandoning checking win conditions")
+		slog.Error("Error parsing base url", slog.String("error", err.Error()))
 		return false
 	}
 	api = api.JoinPath("fixtures")
@@ -42,7 +48,7 @@ func CheckWinConditions(fixture simpleFixture) bool {
 	api.RawQuery = params.Encode()
 	req, err := http.NewRequest("GET", api.String(), nil)
 	if err != nil {
-		fmt.Println("Bad request, abandoning checking win conditions for", err)
+		slog.Error("bad request", slog.String("error", err.Error()))
 		return false
 	}
 	req.Header.Add("X-RapidAPI-Key", os.Getenv("FOOTBALL_RAPID_API_KEY"))
@@ -50,7 +56,7 @@ func CheckWinConditions(fixture simpleFixture) bool {
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		fmt.Println("error performing request abandoning checking win conditions", err)
+		slog.Error("error performing request", slog.String("error", err.Error()))
 		return false
 	}
 	defer res.Body.Close()
@@ -58,10 +64,11 @@ func CheckWinConditions(fixture simpleFixture) bool {
 	var fixtureResponse models.FixtureResponse
 	err = json.Unmarshal(body, &fixtureResponse)
 
-	fmt.Printf("Evaluating %s v %s: Time: %s\n",
-		fixtureResponse.Response[0].Teams.Home.Name,
-		fixtureResponse.Response[0].Teams.Away.Name,
-		fixtureResponse.Response[0].Fixture.Date,
+	slog.Info(
+		"evaluating game",
+		slog.String("home", fixtureResponse.Response[0].Teams.Home.Name),
+		slog.String("away", fixtureResponse.Response[0].Teams.Away.Name),
+		slog.String("date", fixtureResponse.Response[0].Fixture.Date),
 	)
 
 	return fixtureResponse.Response[0].Teams.Home.Winner == true
