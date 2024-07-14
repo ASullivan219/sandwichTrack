@@ -77,9 +77,9 @@ func TestCronFunctionality(t *testing.T) {
 	cm.Cron.Start()
 	for time.Now().Before(now.Add(twoMinDur)) {
 		if tj.TestBool {
+			cm.Cron.Stop()
 			return
 		}
 	}
-
 	t.Fatal("ERROR: Test timed out without changing the internal value of testJob")
 }

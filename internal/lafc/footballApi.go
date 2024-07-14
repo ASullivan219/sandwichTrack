@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"time"
 
 	"github.com/ASullivan219/freeSandwich/internal/lafc/models"
+	"github.com/ASullivan219/freeSandwich/internal/notifier"
 )
 
 const (
@@ -37,22 +39,24 @@ func newSimpleFixture(f models.FixtureEntry) simpleFixture {
 	description := fmt.Sprintf("Home: %s, Away: %s, DateTime: %s, ExecutionTime: %s",
 		f.Teams.Home.Name, f.Teams.Away.Name, f.Fixture.Date, executionTime)
 	if err != nil {
-		fmt.Println("ERROR: parsing date")
+		slog.Error(
+			"bad date",
+			slog.String("error", err.Error()),
+		)
 	}
 	return simpleFixture{fixtureId: f.Fixture.Id, Time: fixtureDate, Description: description, ExecutionTime: executionTime}
 }
 
-func BuildCronnables() []LafcCronJob {
+func BuildCronnables(notifier notifier.I_Notifier) []LafcCronJob {
 	fixtures := getAllFixtures()
 	eligible := filterFixtures(fixtures)
-	fmt.Println(len(eligible))
-	return convertToCronnables(eligible)
+	return convertToCronnables(eligible, notifier)
 }
 
-func convertToCronnables(fixtures []simpleFixture) []LafcCronJob {
+func convertToCronnables(fixtures []simpleFixture, notifier notifier.I_Notifier) []LafcCronJob {
 	jobs := make([]LafcCronJob, 0, len(fixtures))
 	for _, fixture := range fixtures {
-		jobs = append(jobs, *newjob(fixture))
+		jobs = append(jobs, *newjob(fixture, notifier))
 	}
 	return jobs
 }
@@ -63,8 +67,11 @@ func filterFixtures(fixtures []models.FixtureEntry) []simpleFixture {
 	for _, fixture := range fixtures {
 		fixtureDate, err := time.Parse(TIME_LAYOUT, fixture.Fixture.Date)
 		if err != nil {
-			fmt.Printf("error parsing date: %s\n", fixture.Fixture.Date)
-			fmt.Println(err)
+			slog.Error(
+				"error parsing date",
+				slog.String("date", fixture.Fixture.Date),
+				slog.String("error", err.Error()),
+			)
 		}
 		if filter(fixture, fixtureDate, currentTime) {
 			eligibleFixtures = append(
@@ -94,7 +101,10 @@ func getAllFixtures() []models.FixtureEntry {
 
 	u, err := url.Parse(BASE_API_URL)
 	if err != nil {
-		fmt.Println("error parsing base url")
+		slog.Error(
+			"error parsing url",
+			slog.String("error", err.Error()),
+		)
 	}
 	u = u.JoinPath("fixtures")
 	queryParams := u.Query()
@@ -105,21 +115,27 @@ func getAllFixtures() []models.FixtureEntry {
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		fmt.Println("Bad request", err)
+		slog.Error(
+			"error bad request",
+			slog.String("error", err.Error()))
 	}
 	req.Header.Add("X-RapidAPI-Key", os.Getenv("FOOTBALL_RAPID_API_KEY"))
 	req.Header.Add("X-RapidAPI-Host", os.Getenv("FOOTBALL_RAPIS_API_HOST"))
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("error performing request", err)
+		slog.Error(
+			"error performing request",
+			slog.String("error", err.Error()))
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
 	var fixtureResponse models.FixtureResponse
 	err = json.Unmarshal(body, &fixtureResponse)
 	if err != nil {
-		fmt.Println("Error unmarshaling fixture response", err)
+		slog.Error(
+			"json error",
+			slog.String("error", err.Error()))
 	}
 
 	return fixtureResponse.Response
