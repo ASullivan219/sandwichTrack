@@ -3,7 +3,7 @@ run:
 	go run ./cmd/main/
 docker_build:
 	@echo "building container"
-	docker build -t sandwhich-tracker .
+	docker build -t sandwich-tracker .
 docker_compose:
 	@echo "starting docker container"
 	docker-compose up -d
