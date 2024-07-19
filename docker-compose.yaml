@@ -1,0 +1,5 @@
+version: "3.7"
+services:
+  newsletter:
+    container_name: "sandwich-track"
+    image: "sandwich-tracker:latest"

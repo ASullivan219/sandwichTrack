@@ -86,11 +86,12 @@ func filterFixtures(fixtures []models.FixtureEntry) []simpleFixture {
 // Only Home games should be checked and only games in the future
 func filter(fixture models.FixtureEntry, fixtureDate time.Time, currentTime time.Time) bool {
 
+	threehours, _ := time.ParseDuration("3h")
 	if fixture.Teams.Home.Id != LAFC_TEAM_ID_INT {
 		return false
 	}
 
-	if fixtureDate.UTC().Before(currentTime.UTC()) {
+	if fixtureDate.UTC().Add(threehours).Before(currentTime.UTC()) {
 		return false
 	}
 

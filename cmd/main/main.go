@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/ASullivan219/freeSandwich/internal/angels"
 	"github.com/ASullivan219/freeSandwich/internal/cronmanager"
@@ -16,6 +17,8 @@ func main() {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
+
+	slog.Info(time.Now().String())
 
 	cronMan := cronmanager.New()
 	emailNotifier := notifier.NewEmailNotifier(
