@@ -32,10 +32,9 @@ func New() *CronManager {
 func (cm *CronManager) Start() {
 	slog.Info("Starting cron Manager")
 	cm.Cron.Start()
-	for {
-	}
-
+	select {}
 }
+
 func (cm *CronManager) NextFive() []cron.Entry {
 	if len(cm.Cron.Entries()) < 5 {
 		return cm.Cron.Entries()[:len(cm.Cron.Entries())]
